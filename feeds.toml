@@ -1,5 +1,5 @@
 [jdon]
-title = "Wikipedia — did you know?"
+title = "jdon — did you know?"
 url = "https://www.jdon.com"
 entrySelector = "#mp-dyk > ul li"
 titleSelector = "b"
