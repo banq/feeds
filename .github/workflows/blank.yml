@@ -1,36 +1,37 @@
-# This is a basic workflow to help you get started with Actions
+name: Publish RSS feeds to GitHub Pages
 
-name: CI
-
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the gh-pages branch
   push:
-    branches: [ gh-pages ]
-  pull_request:
-    branches: [ gh-pages ]
-
-  # Allows you to run this workflow manually from the Actions tab
+    branches:
+      - main
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    # Run every day at 5:30 and 17:30:
+    - cron:  '30 5,17 * * *'
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+env:
+  CI: true
 jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
-    runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
+  publish-feeds:
+    runs-on: ubuntu-20.04
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
-
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
-
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
-        run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+    - uses: actions/checkout@v2.3.4
+    - uses: microsoft/playwright-github-action@v1
+    - run: npx feed-me-up-scotty
+    - name: Deploy to GitHub Pages
+      run: |
+        git config user.name $GITHUB_ACTOR
+        git config user.email $GITHUB_ACTOR@users.noreply.github.com
+        git remote add gh-pages-remote https://x-access-token:$GITHUB_TOKEN@github.com/$GITHUB_REPOSITORY.git
+        git fetch --no-recurse-submodules
+        git worktree add ./gh-pages gh-pages
+        cd gh-pages
+        git rm -r .
+        cp -r ../public/. .
+        git add .
+        git commit --message="Deploying to GitHub Pages from $GITHUB_SHA"
+        git push gh-pages-remote gh-pages:gh-pages
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
